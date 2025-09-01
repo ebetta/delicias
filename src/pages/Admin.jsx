@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { getProducts, createProduct, updateProduct, deleteProduct } from "@/api/localApiClient";
+import { getProducts, createProduct, updateProduct, deleteProduct, reorderProducts } from "@/api/localApiClient";
 import { Button } from "@/components/ui/button";
 import { Plus, Package, Settings, BarChart3 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -63,7 +63,17 @@ export default function Admin() {
     }
   };
 
-  
+  const handleReorder = async (reorderedProducts) => {
+    setProducts(reorderedProducts);
+    const orderedIds = reorderedProducts.map(p => p.id);
+    try {
+      await reorderProducts(orderedIds);
+    } catch (error) {
+      console.error('Erro ao reordenar produtos:', error);
+      // Optionally, revert the state change
+      loadProducts();
+    }
+  };
 
   const tabs = [
     { id: "products", label: "Produtos", icon: Package },
@@ -137,6 +147,7 @@ export default function Admin() {
               isLoading={isLoading}
               onEdit={handleEditProduct}
               onDelete={handleDeleteProduct}
+              onReorder={handleReorder}
             />
           )}
 

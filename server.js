@@ -65,11 +65,29 @@ db.serialize(() => {
     is_custom_order BOOLEAN,
     production_time_days INTEGER,
     production_time_hours INTEGER,
-    image_urls TEXT
+    image_urls TEXT,
+    display_order INTEGER
   )`, (err) => {
     if (err) {
       console.error(err.message);
     }
+
+    // Add display_order column if it doesn't exist
+    db.all("PRAGMA table_info(products)", (err, columns) => {
+        if (err) {
+            console.error(err.message);
+            return;
+        }
+        const hasDisplayOrder = columns.some(col => col.name === 'display_order');
+        if (!hasDisplayOrder) {
+            db.run("ALTER TABLE products ADD COLUMN display_order INTEGER", (err) => {
+                if (err) {
+                    console.error(err.message);
+                }
+            });
+        }
+    });
+
     // Add sample data if the table is empty
     db.get("SELECT COUNT(*) as count FROM products", (err, row) => {
         if (err) {
@@ -117,7 +135,7 @@ db.serialize(() => {
 });
 
 app.get('/api/products', (req, res) => {
-  db.all("SELECT * FROM products", [], (err, rows) => {
+  db.all("SELECT * FROM products ORDER BY display_order", [], (err, rows) => {
     if (err) {
       res.status(500).json({ error: err.message });
       return;
@@ -153,16 +171,26 @@ app.get('/api/products/:id', (req, res) => {
 app.post('/api/products', (req, res) => {
     const { id, name, description, price, category, is_featured, is_available, is_custom_order, production_time_days, production_time_hours, image_urls } = req.body;
     const newId = id || `prod_${Date.now()}`;
-    db.run(`INSERT INTO products (id, name, description, price, category, is_featured, is_available, is_custom_order, production_time_days, production_time_hours, image_urls) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
-        [newId, name, description, price, category, is_featured, is_available, is_custom_order, production_time_days, production_time_hours, JSON.stringify(image_urls)], 
-        function(err) {
-            if (err) {
-                res.status(500).json({ error: err.message });
-                return;
-            }
-            res.status(201).json({ id: newId });
+
+    db.get("SELECT MAX(display_order) as max_order FROM products", (err, row) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
         }
-    );
+
+        const newOrder = row.max_order === null ? 0 : row.max_order + 1;
+
+        db.run(`INSERT INTO products (id, name, description, price, category, is_featured, is_available, is_custom_order, production_time_days, production_time_hours, image_urls, display_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [newId, name, description, price, category, is_featured, is_available, is_custom_order, production_time_days, production_time_hours, JSON.stringify(image_urls), newOrder],
+            function(err) {
+                if (err) {
+                    res.status(500).json({ error: err.message });
+                    return;
+                }
+                res.status(201).json({ id: newId });
+            }
+        );
+    });
 });
 
 app.put('/api/products/:id', (req, res) => {
@@ -190,6 +218,40 @@ app.delete('/api/products/:id', (req, res) => {
         res.status(200).json({ message: 'Product deleted' });
     });
 });
+
+app.post('/api/products/reorder', (req, res) => {
+    const { orderedIds } = req.body;
+
+    if (!orderedIds || !Array.isArray(orderedIds)) {
+        return res.status(400).json({ message: 'Invalid request body' });
+    }
+
+    db.serialize(() => {
+        db.run("BEGIN TRANSACTION");
+        const stmt = db.prepare("UPDATE products SET display_order = ? WHERE id = ?");
+        
+        orderedIds.forEach((id, index) => {
+            stmt.run(index, id);
+        });
+
+        stmt.finalize((err) => {
+            if (err) {
+                db.run("ROLLBACK");
+                res.status(500).json({ error: err.message });
+                return;
+            }
+
+            db.run("COMMIT", (err) => {
+                if (err) {
+                    res.status(500).json({ error: err.message });
+                    return;
+                }
+                res.status(200).json({ message: 'Products reordered' });
+            });
+        });
+    });
+});
+
 
 // Settings endpoints
 db.serialize(() => {

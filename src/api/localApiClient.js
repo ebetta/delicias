@@ -54,6 +54,20 @@ export const deleteProduct = async (id) => {
     return response.json();
 };
 
+export const reorderProducts = async (orderedIds) => {
+    const response = await fetch(`${API_URL}/products/reorder`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ orderedIds }),
+    });
+    if (!response.ok) {
+        throw new Error('Failed to reorder products');
+    }
+    return response.json();
+};
+
 export const getSettings = async () => {
   const response = await fetch(`${API_URL}/settings`);
   if (!response.ok) {
