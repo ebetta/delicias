@@ -5,15 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Heart, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 
-export default function HeroSection() {
-  const settings = {
-    hero_image_url: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-    floating_text_1: "Vários Sabores",
-    floating_text_2: "Alguns produtos são sob encomenda"
-  };
-
-  
-
+export default function HeroSection({ settings }) {
   return (
     <section className="relative py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
       <div className="max-w-7xl mx-auto">
@@ -89,7 +81,7 @@ export default function HeroSection() {
               <div className="absolute inset-0 bg-gradient-to-br from-pink-100/50 to-pink-200/50"></div>
               <div className="relative z-10">
                 <img
-                  src={settings.hero_image_url}
+                  src={settings?.heroImageUrl}
                   alt="Bolo artesanal"
                   className="w-full h-96 object-cover rounded-2xl shadow-lg"
                 />
@@ -103,7 +95,7 @@ export default function HeroSection() {
               className="absolute -top-4 -right-4 glass-card p-4 rounded-2xl"
             >
               <div className="text-center">
-                <div className="text-xl font-bold text-pink-600">{settings.floating_text_1}</div>
+                <div className="text-xl font-bold text-pink-600">{settings?.floatingText1}</div>
               </div>
             </motion.div>
             
@@ -113,7 +105,7 @@ export default function HeroSection() {
               className="absolute -bottom-4 -left-4 glass-card p-4 rounded-2xl w-auto max-w-xs"
             >
               <div className="text-center">
-                <div className="text-sm font-semibold text-pink-600">{settings.floating_text_2}</div>
+                <div className="text-sm font-semibold text-pink-600">{settings?.floatingText2}</div>
               </div>
             </motion.div>
           </motion.div>

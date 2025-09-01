@@ -2,22 +2,16 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { motion } from "framer-motion";
-import {
-  Cake, IceCream, Cookie, Gift, Pizza, Candy, Croissant, Sandwich, Heart, CakeSlice 
-} from 'lucide-react';
+import * as icons from 'lucide-react';
 
-const iconComponents = {
-  Cake, IceCream, Cookie, Gift, Pizza, Candy, Croissant, Sandwich, Heart, CakeSlice
-};
+export default function CategorySection({ settings }) {
+  const categoryData = [
+    { name: "Bolos", filter: "bolo", description: settings ? settings['categoryDescription-bolos'] : "Bolos artesanais para todas as ocasiões", gradient: "from-pink-500 to-pink-400", icon: settings ? settings['categoryIcon-bolos'] : 'Cake' },
+    { name: "Tortas", filter: "torta", description: settings ? settings['categoryDescription-tortas'] : "Tortas doces e salgadas irresistíveis", gradient: "from-purple-500 to-pink-500", icon: settings ? settings['categoryIcon-tortas'] : 'CakeSlice' },
+    { name: "Doces", filter: "doce", description: settings ? settings['categoryDescription-doces'] : "Docinhos finos e brigadeiros gourmet", gradient: "from-pink-400 to-rose-400", icon: settings ? settings['categoryIcon-doces'] : 'Cookie' },
+    { name: "Salgados", filter: "salgado", description: settings ? settings['categoryDescription-salgados'] : "Salgadinhos e petiscos deliciosos", gradient: "from-rose-500 to-pink-500", icon: settings ? settings['categoryIcon-salgados'] : 'Croissant' }
+  ];
 
-const categoryData = [
-  { name: "Bolos", filter: "bolo", description: "Bolos artesanais para todas as ocasiões", gradient: "from-pink-500 to-pink-400", icon: 'Cake' },
-  { name: "Tortas", filter: "torta", description: "Tortas doces e salgadas irresistíveis", gradient: "from-purple-500 to-pink-500", icon: 'IceCream' },
-  { name: "Doces", filter: "doce", description: "Docinhos finos e brigadeiros gourmet", gradient: "from-pink-400 to-rose-400", icon: 'Cookie' },
-  { name: "Salgados", filter: "salgado", description: "Salgadinhos e petiscos deliciosos", gradient: "from-rose-500 to-pink-500", icon: 'Sandwich' }
-];
-
-export default function CategorySection() {
   return (
     <section className="py-20 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
@@ -38,7 +32,7 @@ export default function CategorySection() {
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {categoryData.map((category, index) => {
             const iconName = category.icon;
-            const IconComponent = iconComponents[iconName] || iconComponents.Cake;
+            const IconComponent = icons[iconName] || icons.Cake;
             
             return (
               <motion.div

@@ -2,9 +2,9 @@ import React from "react";
 import { motion } from "framer-motion";
 import { MessageCircle } from "lucide-react";
 
-export default function WhatsAppButton() {
-  const whatsapp_number = "5511999998888"; // Hardcoded for now
-  const whatsapp_message = "Olá! Gostaria de mais informações sobre seus produtos."; // Hardcoded for now
+export default function WhatsAppButton({ settings }) {
+  const whatsapp_number = settings ? settings.whatsappNumber : "5511999998888";
+  const whatsapp_message = settings ? settings.whatsappMessage : "Olá! Gostaria de mais informações sobre seus produtos.";
 
   const phoneNumber = whatsapp_number.replace(/\D/g, '');
   const message = encodeURIComponent(whatsapp_message);

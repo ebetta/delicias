@@ -191,6 +191,97 @@ app.delete('/api/products/:id', (req, res) => {
     });
 });
 
+// Settings endpoints
+db.serialize(() => {
+  db.run(`CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT
+  )`, (err) => {
+    if (err) {
+      console.error(err.message);
+    }
+    // Add default settings if the table is empty
+    db.get("SELECT COUNT(*) as count FROM settings", (err, row) => {
+        if (err) {
+            console.error(err.message);
+            return;
+        }
+        if (row.count === 0) {
+            const stmt = db.prepare("INSERT INTO settings VALUES (?, ?)");
+            const defaultSettings = {
+                'heroImageUrl': '/uploads/1756747783803-Gemini_Generated_Image_77wte277wte277wt.png',
+                'floatingText1': 'Destaque',
+                'floatingText2': 'Alguns produtos são sob encomenda',
+                'categoryIcon-bolos': 'Cake',
+                'categoryDescription-bolos': 'Bolos artesanais para todas as ocasiões',
+                'categoryIcon-tortas': 'CakeSlice',
+                'categoryDescription-tortas': 'Tortas doces e salgadas irresistíveis',
+                'categoryIcon-doces': 'Cookie',
+                'categoryDescription-doces': 'Docinhos finos e brigadeiros gourmet',
+                'categoryIcon-salgados': 'Croissant',
+                'categoryDescription-salgados': 'Salgadinhos e petiscos deliciosos',
+                'whatsappNumber': '5511976838931',
+                'whatsappMessage': 'Olá, gostaria de mais informações'
+            };
+            for (const [key, value] of Object.entries(defaultSettings)) {
+                stmt.run(key, value);
+            }
+            stmt.finalize();
+            console.log('Inserted default settings.');
+        }
+    });
+  });
+});
+
+app.get('/api/settings', (req, res) => {
+    db.all("SELECT * FROM settings", [], (err, rows) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        const settings = rows.reduce((acc, row) => {
+            acc[row.key] = row.value;
+            return acc;
+        }, {});
+        res.json(settings);
+    });
+});
+
+app.post('/api/settings', (req, res) => {
+    const settings = req.body;
+    db.serialize(() => {
+        db.run("BEGIN TRANSACTION");
+        const stmt = db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)");
+        for (const [key, value] of Object.entries(settings)) {
+            stmt.run(key, value);
+        }
+        stmt.finalize();
+        db.run("COMMIT", (err) => {
+            if (err) {
+                res.status(500).json({ error: err.message });
+                return;
+            }
+            res.status(200).json({ message: 'Settings updated' });
+        });
+    });
+});
+
+app.post('/api/upload/hero', upload.single('image'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded.' });
+    }
+    const fileUrl = `/uploads/${req.file.filename}`;
+    db.run("INSERT OR REPLACE INTO settings (key, value) VALUES ('heroImageUrl', ?)", [fileUrl], function(err) {
+        if (err) {
+            console.error(err.message);
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.status(200).json({ url: fileUrl });
+    });
+});
+
+
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`)
 })

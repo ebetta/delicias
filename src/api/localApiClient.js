@@ -53,3 +53,49 @@ export const deleteProduct = async (id) => {
     }
     return response.json();
 };
+
+export const getSettings = async () => {
+  const response = await fetch(`${API_URL}/settings`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch settings');
+  }
+  return response.json();
+};
+
+const localApiClient = {
+    get: async (endpoint) => {
+        const response = await fetch(`${API_URL}${endpoint}`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch ${endpoint}`);
+        }
+        return response.json();
+    },
+    post: async (endpoint, data, options) => {
+        const isFormData = data instanceof FormData;
+
+        const config = {
+            method: 'POST',
+            ...options,
+            body: data,
+        };
+
+        if (!isFormData) {
+            config.headers = {
+                'Content-Type': 'application/json',
+                ...options?.headers,
+            };
+            config.body = JSON.stringify(data);
+        } else if (options?.headers) {
+            config.headers = options.headers;
+        }
+
+        const response = await fetch(`${API_URL}${endpoint}`, config);
+
+        if (!response.ok) {
+            throw new Error(`Failed to post to ${endpoint}`);
+        }
+        return response.json();
+    }
+};
+
+export default localApiClient;

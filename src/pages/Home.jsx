@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from "react";
-import { getProducts } from "@/api/localApiClient";
+import { getProducts, getSettings } from "@/api/localApiClient";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Heart, Star, Clock, ShoppingCart, Sparkles } from "lucide-react";
@@ -11,15 +10,26 @@ import { toast as showToast } from "@/components/ui/use-toast";
 import FeaturedProducts from "../components/home/FeaturedProducts";
 import HeroSection from "../components/home/HeroSection";
 import CategorySection from "../components/home/CategorySection";
-import WhatsAppButton from "../components/home/WhatsAppButton"; // Added import
+import WhatsAppButton from "../components/home/WhatsAppButton";
 
 export default function Home() {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [settings, setSettings] = useState(null);
 
   useEffect(() => {
     loadFeaturedProducts();
+    loadSettings();
   }, []);
+
+  const loadSettings = async () => {
+    try {
+      const settingsData = await getSettings();
+      setSettings(settingsData);
+    } catch (error) {
+      console.error('Erro ao carregar configurações:', error);
+    }
+  };
 
   const loadFeaturedProducts = async () => {
     try {
@@ -57,8 +67,8 @@ export default function Home() {
       <div className="absolute top-40 right-20 w-16 h-16 rounded-full bg-gradient-to-r from-pink-400/20 to-pink-600/20 floating-element" style={{animationDelay: '2s'}}></div>
       <div className="absolute top-96 left-1/3 w-12 h-12 rounded-full bg-gradient-to-r from-pink-200/20 to-pink-400/20 floating-element" style={{animationDelay: '4s'}}></div>
 
-      <HeroSection />
-      <CategorySection />
+      <HeroSection settings={settings} />
+      <CategorySection settings={settings} />
       <FeaturedProducts 
         products={featuredProducts} 
         isLoading={isLoading} 
@@ -99,7 +109,7 @@ export default function Home() {
         </div>
       </section>
 
-      <WhatsAppButton /> {/* Added WhatsAppButton component */}
+      <WhatsAppButton settings={settings} />
     </div>
   );
 }
