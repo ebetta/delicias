@@ -8,6 +8,8 @@ import { createPageUrl } from "@/utils";
 
 export default function ProductCard({ product, index, onAddToCart, onViewDetail }) {
   const getProductionTime = () => {
+    if (!product.is_custom_order) return null; // Add this line
+
     const days = product.production_time_days || 0;
     const hours = product.production_time_hours || 0;
     
@@ -44,12 +46,12 @@ export default function ProductCard({ product, index, onAddToCart, onViewDetail 
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
         
-        {product.is_custom_order && (
+        {product.is_custom_order ? (
           <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2 py-1 rounded-full border border-red-500 bg-red-500/90 backdrop-blur-sm">
             <Clock className="w-3 h-3 text-white" />
             <span className="text-xs text-white font-medium">Sob Encomenda</span>
           </div>
-        )}
+        ) : null}
         
         <button className="absolute top-3 right-3 glass-card p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:scale-110">
           <Heart className="w-4 h-4 text-pink-600" />
@@ -71,7 +73,7 @@ export default function ProductCard({ product, index, onAddToCart, onViewDetail 
           </div>
           {productionTime && (
             <div className="text-xs text-gray-500">
-              {productionTime}
+              {product.is_custom_order ? `Tempo de preparo: ${productionTime}` : productionTime}
             </div>
           )}
         </div>

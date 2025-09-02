@@ -107,12 +107,12 @@ export default function ProductDetail({ product, onBack, onAddToCart }) {
                 <Badge className="bg-pink-100 text-pink-800 capitalize">
                   {product.category}
                 </Badge>
-                {product.is_custom_order && (
+                {product.is_custom_order ? (
                   <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-red-500 bg-red-500 text-white">
                     <Clock className="w-3 h-3" />
                     <span className="text-sm font-medium">Sob Encomenda</span>
                   </div>
-                )}
+                ) : null}
               </div>
 
               <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-6">
@@ -131,7 +131,7 @@ export default function ProductDetail({ product, onBack, onAddToCart }) {
                 </div>
                 {productionTime && (
                   <div className="text-sm text-gray-500">
-                    Prazo: {productionTime}
+                    {product.is_custom_order ? `Tempo de preparo: ${productionTime}` : `Prazo: ${productionTime}`}
                   </div>
                 )}
               </div>
