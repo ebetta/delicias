@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { formatPrice } from "@/components/utils/formatters";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { BASE_URL } from "@/api/localApiClient";
 
 export default function ProductCard({ product, index, onAddToCart, onViewDetail }) {
   const getProductionTime = () => {
@@ -39,7 +40,7 @@ export default function ProductCard({ product, index, onAddToCart, onViewDetail 
     >
       <div className="relative overflow-hidden">
         <img
-          src={product.image_urls?.[0] || "https://images.unsplash.com/photo-1578985545062-69928b1d9587?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"}
+                      src={product.image_urls?.[0] ? `${BASE_URL}${product.image_urls[0]}` : "https://images.unsplash.com/photo-1578985545062-69928b1d9587?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"}
           alt={product.name}
           className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105 cursor-pointer"
           onClick={() => onViewDetail(product)}

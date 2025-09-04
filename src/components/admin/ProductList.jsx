@@ -1,4 +1,3 @@
-
 import React from "react";
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Button } from "@/components/ui/button";
@@ -7,6 +6,7 @@ import { Edit, Trash2, Eye, Star, Clock, GripVertical } from "lucide-react";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatPrice } from "@/components/utils/formatters";
+import { BASE_URL } from "@/api/localApiClient";
 
 export default function ProductList({ products, isLoading, onEdit, onDelete, onReorder }) {
   if (isLoading) {
@@ -65,11 +65,7 @@ export default function ProductList({ products, isLoading, onEdit, onDelete, onR
                       </div>
                       <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100">
                         {product.image_urls?.[0] ? (
-                          <img
-                            src={product.image_urls[0]}
-                            alt={product.name}
-                            className="w-full h-full object-cover"
-                          />
+                          <img src={`${BASE_URL}${product.image_urls[0]}`} alt={product.name} className="h-16 w-16 object-cover rounded-md" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
                             <Eye className="w-8 h-8 text-gray-400" />
@@ -95,8 +91,7 @@ export default function ProductList({ products, isLoading, onEdit, onDelete, onR
                                 Encomenda
                               </Badge>
                             )}
-                            <Badge className={`${
-                              product.is_available 
+                            <Badge className={`${product.is_available 
                                 ? 'bg-green-100 text-green-800' 
                                 : 'bg-red-100 text-red-800'
                             }`}>

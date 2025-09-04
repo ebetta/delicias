@@ -1,10 +1,10 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Heart, ShoppingCart, Clock, Plus, Minus } from "lucide-react";
 import { motion } from "framer-motion";
 import { formatPrice } from "@/components/utils/formatters";
+import { BASE_URL } from "@/api/localApiClient";
 
 export default function ProductDetail({ product, onBack, onAddToCart }) {
   const [quantity, setQuantity] = useState(1);
@@ -36,7 +36,9 @@ export default function ProductDetail({ product, onBack, onAddToCart }) {
     return timeText;
   };
 
-  const images = product.image_urls || ["https://images.unsplash.com/photo-1578985545062-69928b1d9587?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"];
+  const images = (product.image_urls && product.image_urls.length > 0
+    ? product.image_urls.map(url => url.startsWith('http') ? url : `${BASE_URL}${url}`)
+    : ["https://images.unsplash.com/photo-1578985545062-69928b1d9587?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"]);
   const productionTime = getProductionTime();
 
   return (

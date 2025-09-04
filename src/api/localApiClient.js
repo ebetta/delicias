@@ -1,4 +1,12 @@
-const API_URL = 'http://localhost:3001/api';
+// Dynamically set the base URL for the API
+const hostname = window.location.hostname;
+
+// Use the network IP in development when not on localhost, otherwise use localhost.
+export const BASE_URL = hostname === 'localhost'
+  ? 'http://localhost:3001'
+  : `http://${hostname}:3001`;
+
+const API_URL = `${BASE_URL}/api`;
 
 export const getProducts = async () => {
   const response = await fetch(`${API_URL}/products`);

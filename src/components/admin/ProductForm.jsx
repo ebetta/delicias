@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, ImageIcon } from "lucide-react";
 import { motion } from "framer-motion";
+import { BASE_URL } from "@/api/localApiClient";
 
 export default function ProductForm({ product, onSave, onCancel }) {
   const [formData, setFormData] = useState({
@@ -42,7 +43,7 @@ export default function ProductForm({ product, onSave, onCancel }) {
     });
 
     try {
-      const response = await fetch('http://localhost:3001/api/upload', {
+      const response = await fetch(`${BASE_URL}/api/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -202,7 +203,7 @@ export default function ProductForm({ product, onSave, onCancel }) {
             {formData.image_urls.map((url, index) => (
               <div key={index} className="relative group">
                 <img
-                  src={url}
+                  src={url.startsWith('/') ? `${BASE_URL}${url}` : url}
                   alt={`Produto ${index + 1}`}
                   className="w-full h-24 object-cover rounded-lg"
                 />

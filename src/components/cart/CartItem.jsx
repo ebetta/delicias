@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Minus, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { formatPrice } from "@/components/utils/formatters"; // Corrected import path
+import { BASE_URL } from "@/api/localApiClient";
 
 export default function CartItem({ item, onUpdateQuantity, onRemove }) {
   return (
@@ -15,7 +16,7 @@ export default function CartItem({ item, onUpdateQuantity, onRemove }) {
     >
       <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
         <img
-          src={item.image_urls?.[0] || "https://images.unsplash.com/photo-1578985545062-69928b1d9587?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"}
+          src={item.image_urls?.[0] ? `${BASE_URL}${item.image_urls[0]}` : "https://images.unsplash.com/photo-1578985545062-69928b1d9587?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"}
           alt={item.name}
           className="w-full h-full object-cover"
         />
