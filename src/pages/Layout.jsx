@@ -1,6 +1,6 @@
 
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Home, Package, ShoppingCart, Settings as SettingsIcon, Cake, MessageCircle } from "lucide-react";
@@ -14,12 +14,24 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Toaster } from "@/components/ui/toaster";
+import localApiClient from '@/api/localApiClient';
 
 export default function Layout({ children, currentPageName }) {
   const location = useLocation();
   const [cartCount, setCartCount] = React.useState(0);
+  const [settings, setSettings] = useState({});
 
-  React.useEffect(() => {
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const data = await localApiClient.get('/settings');
+        setSettings(data);
+      } catch (error) {
+        console.error('Failed to fetch settings', error);
+      }
+    };
+    fetchSettings();
+
     updateCartCount();
     
     window.addEventListener('cartUpdated', updateCartCount);
@@ -32,14 +44,31 @@ export default function Layout({ children, currentPageName }) {
     setCartCount(count);
   };
 
-  
-  
   const navigationItems = [
     { title: "Início", url: createPageUrl("Home"), icon: Home },
     { title: "Produtos", url: createPageUrl("Products"), icon: Package },
     { title: "Carrinho", url: createPageUrl("Cart"), icon: ShoppingCart, badge: cartCount },
     { title: "Admin", url: createPageUrl("Admin"), icon: SettingsIcon },
   ];
+
+  const HeaderLogo = () => (
+    <Link to={createPageUrl("Home")} className="flex items-center gap-2">
+      {settings.headerLogoUrl ? (
+        <img src={settings.headerLogoUrl} alt="Delícias da Claudinha" className="h-24 object-contain" />
+      ) : (
+        <>
+          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-pink-500 to-pink-400 flex items-center justify-center">
+            <Cake className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-pink-600 to-pink-500 bg-clip-text text-transparent">
+              Delícias da Claudinha
+            </h1>
+          </div>
+        </>
+      )}
+    </Link>
+  );
 
   return (
     <div className="min-h-screen relative overflow-x-hidden">
@@ -113,17 +142,8 @@ export default function Layout({ children, currentPageName }) {
       {/* Navigation Header */}
       <header className="sticky top-0 z-50 glassmorphism">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link to={createPageUrl("Home")} className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-pink-500 to-pink-400 flex items-center justify-center">
-                <Cake className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-pink-600 to-pink-500 bg-clip-text text-transparent">
-                  Delícias da Claudinha
-                </h1>
-              </div>
-            </Link>
+          <div className="flex justify-between items-center h-28">
+            <HeaderLogo />
 
             <nav className="hidden md:flex items-center space-x-8">
               {navigationItems.map((item) => (

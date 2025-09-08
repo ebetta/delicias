@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/use-toast';
 
 export default function AdminSettings() {
   const [settings, setSettings] = useState({
+    headerLogoUrl: '',
     heroImageUrl: '',
     floatingText1: '',
     floatingText2: '',
@@ -23,6 +24,8 @@ export default function AdminSettings() {
     whatsappNumber: '',
     whatsappMessage: '',
   });
+  const [headerLogoFile, setHeaderLogoFile] = useState(null);
+  const [headerLogoPreview, setHeaderLogoPreview] = useState(null);
   const [heroImageFile, setHeroImageFile] = useState(null);
   const [heroImagePreview, setHeroImagePreview] = useState(null);
   const { toast } = useToast();
@@ -49,7 +52,15 @@ export default function AdminSettings() {
     setSettings((prev) => ({ ...prev, [id]: value }));
   };
 
-  const handleFileChange = (e) => {
+  const handleLogoFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setHeaderLogoFile(file);
+      setHeaderLogoPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleHeroFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setHeroImageFile(file);
@@ -60,15 +71,23 @@ export default function AdminSettings() {
   const handleSaveChanges = async () => {
     try {
       let newSettings = { ...settings };
+
+      if (headerLogoFile) {
+        const formData = new FormData();
+        formData.append('image', headerLogoFile);
+        const uploadResponse = await localApiClient.post('/upload/logo', formData);
+        newSettings.headerLogoUrl = uploadResponse.url;
+      }
+
       if (heroImageFile) {
         const formData = new FormData();
         formData.append('image', heroImageFile);
         const uploadResponse = await localApiClient.post('/upload/hero', formData);
         newSettings.heroImageUrl = uploadResponse.url;
-        setSettings(newSettings);
       }
 
       await localApiClient.post('/settings', newSettings);
+      setSettings(newSettings); // Update state with the new URLs
       toast({
         title: 'Configurações salvas',
         description: 'Suas alterações foram salvas com sucesso.',
@@ -87,6 +106,25 @@ export default function AdminSettings() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
+          <CardTitle>Logo do Cabeçalho</CardTitle>
+          <CardDescription>Faça o upload do logo que será exibido no cabeçalho do site. Use uma imagem com fundo transparente (PNG) de aproximadamente 300x70 pixels.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex items-center gap-6">
+          <div className="w-48 h-auto p-2 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center">
+            {(headerLogoPreview || settings.headerLogoUrl) && <img src={headerLogoPreview || settings.headerLogoUrl} alt="Logo Atual" className="max-w-full max-h-28 object-contain" />}
+          </div>
+          <div>
+            <Label htmlFor="logo-upload" className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90">
+              <Upload className="h-4 w-4" />
+              Fazer Upload
+            </Label>
+            <input id="logo-upload" type="file" className="hidden" onChange={handleLogoFileChange} accept="image/png, image/jpeg, image/webp" />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Imagem da Página Inicial</CardTitle>
           <CardDescription>Faça o upload da imagem principal que será exibida na sua página inicial.</CardDescription>
         </CardHeader>
@@ -99,7 +137,7 @@ export default function AdminSettings() {
               <Upload className="h-4 w-4" />
               Fazer Upload
             </Label>
-            <input id="hero-image-upload" type="file" className="hidden" onChange={handleFileChange} accept="image/*" />
+            <input id="hero-image-upload" type="file" className="hidden" onChange={handleHeroFileChange} accept="image/*" />
             <p className="text-sm text-muted-foreground mt-2">Recomendado: Imagem horizontal, 1200x800 pixels.</p>
           </div>
         </CardContent>

@@ -343,6 +343,22 @@ app.post('/api/upload/hero', upload.single('image'), (req, res) => {
     });
 });
 
+app.post('/api/upload/logo', upload.single('image'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded.' });
+    }
+    const fileUrl = `/uploads/${req.file.filename}`;
+    db.run("INSERT OR REPLACE INTO settings (key, value) VALUES ('headerLogoUrl', ?)", [fileUrl], function(err) {
+        if (err) {
+            console.error(err.message);
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.status(200).json({ url: fileUrl });
+    });
+});
+
+
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`)
