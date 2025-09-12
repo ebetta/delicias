@@ -107,6 +107,10 @@ export default function Layout({ children, currentPageName }) {
               <Package className="mr-2 h-4 w-4" />
               <span>Meus Pedidos</span>
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/profile')}>
+              <User className="mr-2 h-4 w-4" />
+              <span>Meus Dados</span>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
@@ -119,7 +123,7 @@ export default function Layout({ children, currentPageName }) {
 
     return (
       <Button
-        onClick={() => googleSignIn()}
+        onClick={() => navigate('/login')}
         className="flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 glass-button text-pink-700"
       >
         <User className="w-4 h-4" />

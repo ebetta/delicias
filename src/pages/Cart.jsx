@@ -8,12 +8,33 @@ import { createPageUrl } from "@/utils";
 import { motion } from "framer-motion";
 import { formatPrice } from "@/components/utils/formatters";
 
+import { useAuth } from "../context/AuthContext.jsx";
+import localApiClient from "@/api/localApiClient";
+
 import CartItem from "../components/cart/CartItem";
 import CheckoutForm from "../components/cart/CheckoutForm";
+
+const initialFormData = {
+  phone: "",
+  address: {
+    street: "",
+    number: "",
+    complement: "",
+    neighborhood: "",
+    city: "",
+    zip_code: ""
+  },
+  paymentMethod: "pix",
+  notes: "",
+  saveAddress: true
+};
 
 export default function Cart() {
   const [cart, setCart] = useState([]);
   const [showCheckout, setShowCheckout] = useState(false);
+  const [formData, setFormData] = useState(initialFormData);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,6 +43,34 @@ export default function Cart() {
     window.addEventListener('cartUpdated', loadCart);
     return () => window.removeEventListener('cartUpdated', loadCart);
   }, []);
+
+  useEffect(() => {
+    if (showCheckout && currentUser) {
+      const fetchProfile = async () => {
+        try {
+          const profile = await localApiClient.get(`/profile/${currentUser.uid}`);
+          if (profile) {
+            setFormData(prev => ({
+              ...prev,
+              phone: profile.phone || "",
+              address: {
+                street: profile.street || "",
+                number: profile.number || "",
+                complement: profile.complement || "",
+                neighborhood: profile.neighborhood || "",
+                city: profile.city || "",
+                zip_code: profile.zip_code || ""
+              },
+              paymentMethod: profile.payment_method || "pix"
+            }));
+          }
+        } catch (error) {
+          console.error("Failed to fetch profile:", error);
+        }
+      };
+      fetchProfile();
+    }
+  }, [showCheckout, currentUser]);
   
   const loadCart = () => {
     const cartItems = JSON.parse(localStorage.getItem('cart') || '[]');
@@ -51,8 +100,27 @@ export default function Cart() {
   };
 
   const handleCheckout = async (checkoutData) => {
+    setIsSubmitting(true);
+    
+    if (checkoutData.saveAddress && currentUser) {
+      try {
+        await localApiClient.post('/profile', { 
+          userId: currentUser.uid,
+          name: currentUser.displayName,
+          phone: checkoutData.phone,
+          address: checkoutData.address,
+          paymentMethod: checkoutData.paymentMethod
+        });
+      } catch (error) {
+        console.error("Failed to save profile:", error);
+        // Non-critical error, so we don't block the checkout
+      }
+    }
+
     console.log("Checkout Data:", checkoutData);
     alert("Pedido finalizado com sucesso! (Simulação)");
+    
+    setIsSubmitting(false);
     updateCartStorage([]);
     navigate(createPageUrl("Home"));
   };
@@ -140,8 +208,11 @@ export default function Cart() {
               </>
             ) : (
               <CheckoutForm
+                formData={formData}
+                setFormData={setFormData}
                 onBack={() => setShowCheckout(false)}
                 onSubmit={handleCheckout}
+                isSubmitting={isSubmitting}
               />
             )}
           </div>

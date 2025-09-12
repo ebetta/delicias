@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,23 +8,16 @@ import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, CreditCard, Pizza, Landmark } from "lucide-react";
 import { motion } from "framer-motion";
 
-export default function CheckoutForm({ onBack, onSubmit }) {
-  const [formData, setFormData] = useState({
-    phone: "",
-    address: {
-      street: "",
-      number: "",
-      complement: "",
-      neighborhood: "",
-      city: "",
-      zip_code: ""
-    },
-    paymentMethod: "pix",
-    notes: "",
-    saveAddress: true
-  });
-  
-  const [isSubmitting, setIsSubmitting] = useState(false);
+export default function CheckoutForm({
+  formData,
+  setFormData,
+  onBack,
+  onSubmit,
+  isSubmitting,
+  title = "Finalizar Pedido",
+  description = "Informe os detalhes para entrega e pagamento",
+  submitButtonText = "Confirmar Pedido"
+}) {
 
   const handleAddressChange = (field, value) => {
     setFormData(prev => ({
@@ -45,7 +38,6 @@ export default function CheckoutForm({ onBack, onSubmit }) {
   
   const handleSubmit = (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
     onSubmit(formData);
   };
   
@@ -66,10 +58,10 @@ export default function CheckoutForm({ onBack, onSubmit }) {
         </Button>
         <div>
           <h2 className="text-2xl font-bold text-gray-800">
-            Finalizar Pedido
+            {title}
           </h2>
           <p className="text-gray-600">
-            Informe os detalhes para entrega e pagamento
+            {description}
           </p>
         </div>
       </div>
@@ -148,7 +140,7 @@ export default function CheckoutForm({ onBack, onSubmit }) {
             Voltar
           </Button>
           <Button type="submit" disabled={isSubmitting} className="flex-1 glass-button text-pink-700 hover:text-pink-800">
-            {isSubmitting ? 'Finalizando...' : 'Confirmar Pedido'}
+            {isSubmitting ? 'Salvando...' : submitButtonText}
           </Button>
         </div>
       </form>

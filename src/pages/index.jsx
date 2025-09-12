@@ -11,6 +11,8 @@ import Cart from "./Cart";
 import Orders from "./Orders";
 
 import MyOrders from "./MyOrders";
+import Login from "./Login";
+import Profile from "./Profile";
 
 import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from "../context/AuthContext.jsx";
@@ -67,6 +69,10 @@ function PagesContent() {
                 <Route path="/Orders" element={<Orders />} />
 
                 <Route path="/my-orders" element={<MyOrders />} />
+
+                <Route path="/login" element={<Login />} />
+
+                <Route path="/profile" element={currentUser ? <Profile /> : <Navigate to="/login" />} />
                 
             </Routes>
         </Layout>

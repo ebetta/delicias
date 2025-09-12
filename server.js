@@ -54,6 +54,19 @@ const db = new sqlite3.Database('./database.sqlite', (err) => {
 });
 
 db.serialize(() => {
+  db.run(`CREATE TABLE IF NOT EXISTS user_profiles (
+    user_id TEXT PRIMARY KEY,
+    name TEXT,
+    phone TEXT,
+    street TEXT,
+    number TEXT,
+    complement TEXT,
+    neighborhood TEXT,
+    city TEXT,
+    zip_code TEXT,
+    payment_method TEXT
+  )`);
+
   db.run(`CREATE TABLE IF NOT EXISTS products (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -359,6 +372,50 @@ app.post('/api/upload/logo', upload.single('image'), (req, res) => {
 });
 
 
+
+app.get('/api/profile/:userId', (req, res) => {
+    const { userId } = req.params;
+    db.get("SELECT * FROM user_profiles WHERE user_id = ?", [userId], (err, row) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.json(row); // Returns the profile or null if not found
+    });
+});
+
+app.post('/api/profile', (req, res) => {
+    const { userId, name, phone, address, paymentMethod } = req.body;
+
+    if (!userId) {
+        return res.status(400).json({ message: 'User ID is required.' });
+    }
+
+    const { street, number, complement, neighborhood, city, zip_code } = address;
+
+    db.run(`
+        INSERT INTO user_profiles (user_id, name, phone, street, number, complement, neighborhood, city, zip_code, payment_method) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(user_id) DO UPDATE SET
+            name = excluded.name,
+            phone = excluded.phone,
+            street = excluded.street,
+            number = excluded.number,
+            complement = excluded.complement,
+            neighborhood = excluded.neighborhood,
+            city = excluded.city,
+            zip_code = excluded.zip_code,
+            payment_method = excluded.payment_method
+    `, 
+    [userId, name, phone, street, number, complement, neighborhood, city, zip_code, paymentMethod], 
+    function(err) {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.status(200).json({ message: 'Profile updated successfully.' });
+    });
+});
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`)
