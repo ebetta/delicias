@@ -1,9 +1,9 @@
 
 
 import React, { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Home, Package, ShoppingCart, Settings as SettingsIcon, Cake, MessageCircle } from "lucide-react";
+import { Home, Package, ShoppingCart, Settings as SettingsIcon, Cake, MessageCircle, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -15,11 +15,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Toaster } from "@/components/ui/toaster";
 import localApiClient from '@/api/localApiClient';
+import { useAuth } from "../context/AuthContext.jsx";
 
 export default function Layout({ children, currentPageName }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [cartCount, setCartCount] = React.useState(0);
   const [settings, setSettings] = useState({});
+  const { currentUser, googleSignIn, logout } = useAuth();
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -44,11 +47,22 @@ export default function Layout({ children, currentPageName }) {
     setCartCount(count);
   };
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/home');
+    } catch (error) {
+      console.error("Failed to log out", error);
+    }
+  };
+
+  const isAdmin = currentUser && currentUser.email === 'ebetta@gmail.com';
+
   const navigationItems = [
     { title: "Início", url: createPageUrl("Home"), icon: Home },
     { title: "Produtos", url: createPageUrl("Products"), icon: Package },
     { title: "Carrinho", url: createPageUrl("Cart"), icon: ShoppingCart, badge: cartCount },
-    { title: "Admin", url: createPageUrl("Admin"), icon: SettingsIcon },
+    ...(isAdmin ? [{ title: "Admin", url: createPageUrl("Admin"), icon: SettingsIcon }] : []),
   ];
 
   const HeaderLogo = () => (
@@ -69,6 +83,50 @@ export default function Layout({ children, currentPageName }) {
       )}
     </Link>
   );
+
+  const UserNav = () => {
+    if (currentUser) {
+      const firstName = currentUser.displayName?.split(' ')[0];
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button className="flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 glass-button text-pink-700">
+              <User className="w-4 h-4" />
+              <span className="font-medium">{firstName}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56" align="end" forceMount>
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none">{currentUser.displayName}</p>
+                <p className="text-xs leading-none text-muted-foreground">{currentUser.email}</p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => navigate('/my-orders')}>
+              <Package className="mr-2 h-4 w-4" />
+              <span>Meus Pedidos</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Sair</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    }
+
+    return (
+      <Button
+        onClick={() => googleSignIn()}
+        className="flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 glass-button text-pink-700"
+      >
+        <User className="w-4 h-4" />
+        <span className="font-medium">Entrar</span>
+      </Button>
+    );
+  };
 
   return (
     <div className="min-h-screen relative overflow-x-hidden">
@@ -165,6 +223,7 @@ export default function Layout({ children, currentPageName }) {
                   )}
                 </Link>
               ))}
+              <UserNav />
             </nav>
 
             {/* Mobile Navigation */}
@@ -180,6 +239,7 @@ export default function Layout({ children, currentPageName }) {
                   </span>
                 )}
               </Link>
+              <UserNav />
             </div>
           </div>
         </div>
@@ -202,6 +262,19 @@ export default function Layout({ children, currentPageName }) {
                   <span className="text-xs font-medium">{item.title}</span>
                 </Link>
               ))}
+              {currentUser && (
+                 <Link
+                  to="/my-orders"
+                  className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all duration-300 ${
+                    location.pathname === '/my-orders'
+                      ? 'text-pink-600'
+                      : 'text-gray-600'
+                  }`}
+                >
+                  <Package className="w-5 h-5" />
+                  <span className="text-xs font-medium">Pedidos</span>
+                </Link>
+              )}
             </div>
           </div>
         </div>

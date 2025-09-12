@@ -10,7 +10,10 @@ import Cart from "./Cart";
 
 import Orders from "./Orders";
 
-import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
+import MyOrders from "./MyOrders";
+
+import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from 'react-router-dom';
+import { useAuth } from "../context/AuthContext.jsx";
 
 const PAGES = {
     
@@ -43,6 +46,8 @@ function _getCurrentPage(url) {
 function PagesContent() {
     const location = useLocation();
     const currentPage = _getCurrentPage(location.pathname);
+    const { currentUser } = useAuth();
+    const isAdmin = currentUser && currentUser.email === 'ebetta@gmail.com';
     
     return (
         <Layout currentPageName={currentPage}>
@@ -51,15 +56,17 @@ function PagesContent() {
                     <Route path="/" element={<Home />} />
                 
                 
-                <Route path="/Home" element={<Home />} />
+                <Route path="/home" element={<Home />} />
                 
                 <Route path="/Products" element={<Products />} />
                 
-                <Route path="/Admin" element={<Admin />} />
+                <Route path="/admin" element={isAdmin ? <Admin /> : <Navigate to="/home" />} />
                 
                 <Route path="/Cart" element={<Cart />} />
                 
                 <Route path="/Orders" element={<Orders />} />
+
+                <Route path="/my-orders" element={<MyOrders />} />
                 
             </Routes>
         </Layout>
