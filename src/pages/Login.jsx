@@ -20,18 +20,13 @@ export default function Login() {
   const [registerPassword, setRegisterPassword] = useState('');
   const [registerConfirmPassword, setRegisterConfirmPassword] = useState('');
   
-  const { googleSignIn } = useAuth();
+  const { googleSignIn, login, signup } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleGoogleSignIn = async () => {
     try {
       await googleSignIn();
-      navigate('/home');
-      toast({
-        title: "Login bem-sucedido!",
-        description: "Você entrou com sua conta Google.",
-      });
     } catch (error) {
       console.error("Erro no login com Google:", error);
       toast({
@@ -45,12 +40,7 @@ export default function Login() {
   const handleEmailLogin = async (e) => {
     e.preventDefault();
     try {
-      await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
-      navigate('/home');
-      toast({
-        title: "Login bem-sucedido!",
-        description: "Seja bem-vindo(a) de volta!",
-      });
+      await login(loginEmail, loginPassword);
     } catch (error) {
       console.error("Erro no login com e-mail:", error);
       toast({
@@ -72,12 +62,7 @@ export default function Login() {
       return;
     }
     try {
-      await createUserWithEmailAndPassword(auth, registerEmail, registerPassword);
-      navigate('/home');
-      toast({
-        title: "Registro bem-sucedido!",
-        description: "Sua conta foi criada. Seja bem-vindo(a)!",
-      });
+      await signup(registerEmail, registerPassword);
     } catch (error) {
       console.error("Erro no registro com e-mail:", error);
       let description = "Não foi possível criar a conta. Verifique o e-mail ou tente novamente.";

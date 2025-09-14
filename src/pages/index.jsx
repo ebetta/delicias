@@ -81,8 +81,6 @@ function PagesContent() {
 
 export default function Pages() {
     return (
-        <Router>
-            <PagesContent />
-        </Router>
+        <PagesContent />
     );
 }

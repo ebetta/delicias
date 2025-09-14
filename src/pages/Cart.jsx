@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ShoppingCart, Trash2, Frown } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { motion } from "framer-motion";
 import { formatPrice } from "@/components/utils/formatters";
@@ -31,11 +31,21 @@ const initialFormData = {
 
 export default function Cart() {
   const [cart, setCart] = useState([]);
-  const [showCheckout, setShowCheckout] = useState(false);
-  const [formData, setFormData] = useState(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { currentUser } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const showCheckout = searchParams.get('step') === 'checkout';
+
+  const [formData, setFormData] = useState(() => {
+    const savedData = localStorage.getItem('checkoutForm');
+    return savedData ? JSON.parse(savedData) : initialFormData;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('checkoutForm', JSON.stringify(formData));
+  }, [formData]);
 
   useEffect(() => {
     loadCart();
@@ -52,16 +62,15 @@ export default function Cart() {
           if (profile) {
             setFormData(prev => ({
               ...prev,
-              phone: profile.phone || "",
+              phone: profile.phone || prev.phone,
               address: {
-                street: profile.street || "",
-                number: profile.number || "",
-                complement: profile.complement || "",
-                neighborhood: profile.neighborhood || "",
-                city: profile.city || "",
-                zip_code: profile.zip_code || ""
+                street: profile.street || prev.address.street,
+                number: profile.number || prev.address.number,
+                complement: profile.complement || prev.address.complement,
+                neighborhood: profile.neighborhood || prev.address.neighborhood,
+                city: profile.city || prev.address.city,
+                zip_code: profile.zip_code || prev.address.zip_code
               },
-              paymentMethod: profile.payment_method || "pix"
             }));
           }
         } catch (error) {
@@ -122,10 +131,19 @@ export default function Cart() {
     
     setIsSubmitting(false);
     updateCartStorage([]);
+    localStorage.removeItem('checkoutForm');
     navigate(createPageUrl("Home"));
   };
 
   const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+  const handleShowCheckout = () => {
+    setSearchParams({ step: 'checkout' });
+  };
+
+  const handleBackToCart = () => {
+    setSearchParams({});
+  };
 
   return (
     <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
@@ -136,10 +154,10 @@ export default function Cart() {
           className="text-center mb-8"
         >
           <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
-            Seu Carrinho de Compras
+            {showCheckout ? 'Finalizar Pedido' : 'Seu Carrinho de Compras'}
           </h1>
           <p className="text-gray-600">
-            Revise seus itens e finalize seu pedido
+            {showCheckout ? 'Complete os dados para concluir sua compra' : 'Revise seus itens e finalize seu pedido'}
           </p>
         </motion.div>
 
@@ -198,8 +216,9 @@ export default function Cart() {
                       </Button>
                     </Link>
                     <Button
-                      onClick={() => setShowCheckout(true)}
+                      onClick={handleShowCheckout}
                       className="flex-1 glass-button text-pink-700 hover:text-pink-800"
+                      disabled={cart.length === 0}
                     >
                       Finalizar Compra
                     </Button>
@@ -210,7 +229,7 @@ export default function Cart() {
               <CheckoutForm
                 formData={formData}
                 setFormData={setFormData}
-                onBack={() => setShowCheckout(false)}
+                onBack={handleBackToCart}
                 onSubmit={handleCheckout}
                 isSubmitting={isSubmitting}
               />
@@ -221,3 +240,4 @@ export default function Cart() {
     </div>
   );
 }
+
