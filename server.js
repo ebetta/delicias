@@ -437,6 +437,54 @@ app.post('/api/orders', (req, res) => {
     });
 });
 
+app.get('/api/orders/:userId', (req, res) => {
+    const { userId } = req.params;
+    db.all("SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC", [userId], (err, orders) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+
+        if (!orders.length) {
+            return res.json([]);
+        }
+
+        const orderIds = orders.map(o => o.id);
+        const placeholders = orderIds.map(() => '?').join(',');
+
+        const query = `
+            SELECT 
+                oi.*,
+                p.image_urls
+            FROM order_items oi
+            LEFT JOIN products p ON oi.product_id = p.id
+            WHERE oi.order_id IN (${placeholders})
+        `;
+
+        db.all(query, orderIds, (err, items) => {
+            if (err) {
+                res.status(500).json({ error: err.message });
+                return;
+            }
+
+            const ordersWithItems = orders.map(order => ({
+                ...order,
+                items: items
+                    .filter(item => item.order_id === order.id)
+                    .map(item => {
+                        const image_urls = JSON.parse(item.image_urls || '[]');
+                        return {
+                            ...item,
+                            image_url: image_urls.length > 0 ? image_urls[0] : null
+                        }
+                    })
+            }));
+
+            res.json(ordersWithItems);
+        });
+    });
+});
+
 
 
 app.get('/api/profile/:userId', (req, res) => {
