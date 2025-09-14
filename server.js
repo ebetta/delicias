@@ -67,6 +67,35 @@ db.serialize(() => {
     payment_method TEXT
   )`);
 
+  db.run(`CREATE TABLE IF NOT EXISTS orders (
+    id TEXT PRIMARY KEY,
+    user_id TEXT,
+    total_amount REAL NOT NULL,
+    status TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    phone TEXT,
+    street TEXT,
+    number TEXT,
+    complement TEXT,
+    neighborhood TEXT,
+    city TEXT,
+    zip_code TEXT,
+    payment_method TEXT,
+    notes TEXT,
+    FOREIGN KEY (user_id) REFERENCES user_profiles(user_id)
+  )`);
+
+  db.run(`CREATE TABLE IF NOT EXISTS order_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_id TEXT NOT NULL,
+    product_id TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    price REAL NOT NULL,
+    name TEXT NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES orders(id),
+    FOREIGN KEY (product_id) REFERENCES products(id)
+  )`);
+
   db.run(`CREATE TABLE IF NOT EXISTS products (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -368,6 +397,43 @@ app.post('/api/upload/logo', upload.single('image'), (req, res) => {
             return;
         }
         res.status(200).json({ url: fileUrl });
+    });
+});
+
+app.post('/api/orders', (req, res) => {
+    const { userId, items, totalAmount, address, phone, paymentMethod, notes } = req.body;
+    const orderId = `order_${Date.now()}`;
+
+    db.serialize(() => {
+        db.run("BEGIN TRANSACTION");
+
+        const orderStmt = db.prepare(`
+            INSERT INTO orders (id, user_id, total_amount, status, phone, street, number, complement, neighborhood, city, zip_code, payment_method, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        
+        const { street, number, complement, neighborhood, city, zip_code } = address;
+        orderStmt.run(orderId, userId, totalAmount, 'pending', phone, street, number, complement, neighborhood, city, zip_code, paymentMethod, notes);
+        orderStmt.finalize();
+
+        const itemStmt = db.prepare(`
+            INSERT INTO order_items (order_id, product_id, quantity, price, name)
+            VALUES (?, ?, ?, ?, ?)
+        `);
+
+        for (const item of items) {
+            itemStmt.run(orderId, item.id, item.quantity, item.price, item.name);
+        }
+        itemStmt.finalize();
+
+        db.run("COMMIT", (err) => {
+            if (err) {
+                db.run("ROLLBACK");
+                res.status(500).json({ error: err.message });
+                return;
+            }
+            res.status(201).json({ message: 'Order created successfully', orderId: orderId });
+        });
     });
 });
 

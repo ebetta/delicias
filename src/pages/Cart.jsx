@@ -7,6 +7,8 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { motion } from "framer-motion";
 import { formatPrice } from "@/components/utils/formatters";
+import { useToast } from "@/components/ui/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 import { useAuth } from "../context/AuthContext.jsx";
 import localApiClient from "@/api/localApiClient";
@@ -32,9 +34,11 @@ const initialFormData = {
 export default function Cart() {
   const [cart, setCart] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { toast } = useToast();
 
   const showCheckout = searchParams.get('step') === 'checkout';
 
@@ -110,29 +114,40 @@ export default function Cart() {
 
   const handleCheckout = async (checkoutData) => {
     setIsSubmitting(true);
-    
-    if (checkoutData.saveAddress && currentUser) {
-      try {
+    try {
+      // 1. Save user profile/address info
+      if (checkoutData.saveAddress && currentUser) {
         await localApiClient.post('/profile', { 
           userId: currentUser.uid,
           name: currentUser.displayName,
           phone: checkoutData.phone,
           address: checkoutData.address,
-          paymentMethod: checkoutData.paymentMethod
         });
-      } catch (error) {
-        console.error("Failed to save profile:", error);
-        // Non-critical error, so we don't block the checkout
       }
-    }
 
-    console.log("Checkout Data:", checkoutData);
-    alert("Pedido finalizado com sucesso! (Simulação)");
-    
-    setIsSubmitting(false);
-    updateCartStorage([]);
-    localStorage.removeItem('checkoutForm');
-    navigate(createPageUrl("Home"));
+      // 2. Create the order
+      await localApiClient.post('/orders', {
+        userId: currentUser.uid,
+        items: cart,
+        totalAmount: totalAmount,
+        ...checkoutData
+      });
+
+      // 3. Clear local storage and show success dialog
+      updateCartStorage([]);
+      localStorage.removeItem('checkoutForm');
+      setShowSuccessDialog(true);
+
+    } catch (error) {
+      console.error("Failed to create order:", error);
+      toast({
+        title: "Erro ao Finalizar Pedido",
+        description: "Não foi possível salvar seu pedido. Por favor, tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -146,98 +161,114 @@ export default function Cart() {
   };
 
   return (
-    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
-        >
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
-            {showCheckout ? 'Finalizar Pedido' : 'Seu Carrinho de Compras'}
-          </h1>
-          <p className="text-gray-600">
-            {showCheckout ? 'Complete os dados para concluir sua compra' : 'Revise seus itens e finalize seu pedido'}
-          </p>
-        </motion.div>
+    <>
+      <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Pedido Realizado com Sucesso!</AlertDialogTitle>
+            <AlertDialogDescription>
+              Seu pedido foi enviado e já estamos preparando tudo. Você pode acompanhar o status na sua área de "Meus Pedidos".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => navigate(createPageUrl("Home"))}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-        {cart.length === 0 && !showCheckout ? (
+      <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto">
           <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="text-center py-16"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-8"
           >
-            <div className="glass-card rounded-3xl p-12 max-w-md mx-auto">
-              <Frown className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-600 mb-2">
-                Seu carrinho está vazio
-              </h3>
-              <p className="text-gray-500 text-sm mb-6">
-                Parece que você ainda não adicionou nenhum produto.
-              </p>
-              <Link to={createPageUrl("Products")}>
-                <Button className="glass-button text-pink-700 hover:text-pink-800">
-                  <ShoppingCart className="w-4 h-4 mr-2" />
-                  Explorar Produtos
-                </Button>
-              </Link>
-            </div>
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
+              {showCheckout ? 'Finalizar Pedido' : 'Seu Carrinho de Compras'}
+            </h1>
+            <p className="text-gray-600">
+              {showCheckout ? 'Complete os dados para concluir sua compra' : 'Revise seus itens e finalize seu pedido'}
+            </p>
           </motion.div>
-        ) : (
-          <div className="space-y-8">
-            {!showCheckout ? (
-              <>
-                <div className="glass-card rounded-2xl p-6 space-y-4">
-                  {cart.map(item => (
-                    <CartItem
-                      key={item.id}
-                      item={item}
-                      onUpdateQuantity={updateQuantity}
-                      onRemove={removeFromCart}
-                    />
-                  ))}
-                </div>
 
-                <div className="glass-card rounded-2xl p-6">
-                  <div className="flex justify-between items-center text-xl font-bold">
-                    <span className="text-gray-800">Total:</span>
-                    <span className="text-pink-600">
-                      {formatPrice(totalAmount)}
-                    </span>
+          {cart.length === 0 && !showCheckout ? (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-center py-16"
+            >
+              <div className="glass-card rounded-3xl p-12 max-w-md mx-auto">
+                <Frown className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                  Seu carrinho está vazio
+                </h3>
+                <p className="text-gray-500 text-sm mb-6">
+                  Parece que você ainda não adicionou nenhum produto.
+                </p>
+                <Link to={createPageUrl("Products")}>
+                  <Button className="glass-button text-pink-700 hover:text-pink-800">
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    Explorar Produtos
+                  </Button>
+                </Link>
+              </div>
+            </motion.div>
+          ) : (
+            <div className="space-y-8">
+              {!showCheckout ? (
+                <>
+                  <div className="glass-card rounded-2xl p-6 space-y-4">
+                    {cart.map(item => (
+                      <CartItem
+                        key={item.id}
+                        item={item}
+                        onUpdateQuantity={updateQuantity}
+                        onRemove={removeFromCart}
+                      />
+                    ))}
                   </div>
-                  <div className="mt-6 flex flex-col sm:flex-row gap-4">
-                    <Link to={createPageUrl("Products")} className="flex-1">
+
+                  <div className="glass-card rounded-2xl p-6">
+                    <div className="flex justify-between items-center text-xl font-bold">
+                      <span className="text-gray-800">Total:</span>
+                      <span className="text-pink-600">
+                        {formatPrice(totalAmount)}
+                      </span>
+                    </div>
+                    <div className="mt-6 flex flex-col sm:flex-row gap-4">
+                      <Link to={createPageUrl("Products")} className="flex-1">
+                        <Button
+                          variant="outline"
+                          className="w-full glass-button border-pink-200 text-pink-700"
+                        >
+                          <ArrowLeft className="w-4 h-4 mr-2" />
+                          Continuar Comprando
+                        </Button>
+                      </Link>
                       <Button
-                        variant="outline"
-                        className="w-full glass-button border-pink-200 text-pink-700"
+                        onClick={handleShowCheckout}
+                        className="flex-1 glass-button text-pink-700 hover:text-pink-800"
+                        disabled={cart.length === 0}
                       >
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                        Continuar Comprando
+                        Finalizar Compra
                       </Button>
-                    </Link>
-                    <Button
-                      onClick={handleShowCheckout}
-                      className="flex-1 glass-button text-pink-700 hover:text-pink-800"
-                      disabled={cart.length === 0}
-                    >
-                      Finalizar Compra
-                    </Button>
+                    </div>
                   </div>
-                </div>
-              </>
-            ) : (
-              <CheckoutForm
-                formData={formData}
-                setFormData={setFormData}
-                onBack={handleBackToCart}
-                onSubmit={handleCheckout}
-                isSubmitting={isSubmitting}
-              />
-            )}
-          </div>
-        )}
+                </>
+              ) : (
+                <CheckoutForm
+                  formData={formData}
+                  setFormData={setFormData}
+                  onBack={handleBackToCart}
+                  onSubmit={handleCheckout}
+                  isSubmitting={isSubmitting}
+                />
+              )}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
