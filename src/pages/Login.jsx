@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useAuth } from '../context/AuthContext';
 import { auth } from '../firebase/config';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
@@ -19,10 +20,39 @@ export default function Login() {
   const [registerEmail, setRegisterEmail] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
   const [registerConfirmPassword, setRegisterConfirmPassword] = useState('');
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
   
-  const { googleSignIn, login, signup } = useAuth();
+  const { googleSignIn, login, signup, resetPassword } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const handlePasswordReset = async (e) => {
+    e.preventDefault();
+    if (!resetEmail) {
+      toast({
+        title: "Campo obrigatório",
+        description: "Por favor, insira seu e-mail.",
+        variant: "destructive",
+      });
+      return;
+    }
+    try {
+      await resetPassword(resetEmail);
+      setShowResetDialog(false);
+      toast({
+        title: "E-mail enviado!",
+        description: "Se uma conta com este e-mail existir, você receberá um link para redefinir sua senha.",
+      });
+    } catch (error) {
+      console.error("Erro ao redefinir senha:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível enviar o e-mail de redefinição. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleGoogleSignIn = async () => {
     try {
@@ -140,6 +170,15 @@ export default function Login() {
                 <Button type="submit" className="w-full bg-pink-500 hover:bg-pink-600">
                   Entrar com E-mail
                 </Button>
+                <div className="text-center mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowResetDialog(true)}
+                    className="text-sm text-pink-600 hover:underline focus:outline-none"
+                  >
+                    Esqueci minha senha
+                  </button>
+                </div>
               </form>
               
               <div className="relative my-6">
@@ -228,6 +267,35 @@ export default function Login() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Redefinir sua senha</AlertDialogTitle>
+            <AlertDialogDescription>
+              Digite seu e-mail abaixo. Se ele estiver cadastrado, enviaremos um link para você criar uma nova senha.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <form onSubmit={handlePasswordReset}>
+            <div className="space-y-2 my-4">
+              <Label htmlFor="reset-email">E-mail</Label>
+              <Input 
+                id="reset-email" 
+                type="email" 
+                placeholder="seu@email.com" 
+                required 
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+              />
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction type="submit">Enviar</AlertDialogAction>
+            </AlertDialogFooter>
+          </form>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 }
