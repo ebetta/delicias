@@ -10,6 +10,7 @@ import {
 } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase/config';
 import { useNavigate } from 'react-router-dom';
+import localApiClient from '../api/localApiClient';
 
 const AuthContext = createContext();
 
@@ -40,9 +41,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const signup = async (email, password, onSuccess) => {
+  const signup = async (email, password, name, onSuccess) => {
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Salva o perfil do usuário no banco de dados local
+      await localApiClient.post('/user-profile', {
+        uid: user.uid,
+        name,
+        email,
+      });
+
+      // Atualiza o currentUser com os dados do perfil
+      setCurrentUser({ ...user, name, email });
+
       handleAuthSuccess(onSuccess);
     } catch (error) {
       console.error("Signup Error", error);
@@ -69,8 +82,18 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const profile = await localApiClient.get(`/profile/${user.uid}`);
+          setCurrentUser({ ...user, ...profile });
+        } catch (error) {
+          console.error("Failed to fetch user profile", error);
+          setCurrentUser(user);
+        }
+      } else {
+        setCurrentUser(null);
+      }
       setLoading(false);
     });
 

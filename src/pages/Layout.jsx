@@ -86,7 +86,7 @@ export default function Layout({ children, currentPageName }) {
 
   const UserNav = () => {
     if (currentUser) {
-      const firstName = currentUser.displayName?.split(' ')[0];
+      const firstName = currentUser.name?.split(' ')[0] || currentUser.displayName?.split(' ')[0];
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -98,7 +98,7 @@ export default function Layout({ children, currentPageName }) {
           <DropdownMenuContent className="w-56" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{currentUser.displayName}</p>
+                <p className="text-sm font-medium leading-none">{currentUser.name || currentUser.displayName}</p>
                 <p className="text-xs leading-none text-muted-foreground">{currentUser.email}</p>
               </div>
             </DropdownMenuLabel>

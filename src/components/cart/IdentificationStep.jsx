@@ -11,6 +11,8 @@ export default function IdentificationStep({ onIdentificationComplete }) {
   const { currentUser, googleSignIn, login, signup } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
 
   const handleGoogleSignIn = async () => {
@@ -32,8 +34,12 @@ export default function IdentificationStep({ onIdentificationComplete }) {
 
   const handleSignup = async (e) => {
     e.preventDefault();
+    if (password !== confirmPassword) {
+      setError('As senhas não coincidem.');
+      return;
+    }
     try {
-      await signup(email, password, onIdentificationComplete);
+      await signup(email, password, name, onIdentificationComplete);
     } catch (error) {
       setError('Falha ao criar conta. Verifique o email e a senha.');
     }
@@ -56,17 +62,17 @@ export default function IdentificationStep({ onIdentificationComplete }) {
       <Tabs defaultValue="login" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="login">Entrar</TabsTrigger>
-          <TabsTrigger value="signup">Cadastrar</TabsTrigger>
+          <TabsTrigger value="signup">Registrar</TabsTrigger>
         </TabsList>
         <TabsContent value="login">
           <form onSubmit={handleLogin} className="space-y-4 p-4">
             <div className="space-y-2">
               <Label htmlFor="login-email">Email</Label>
-              <Input id="login-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="glass-button border-pink-200" />
+              <Input id="login-email" type="email" placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="new-password" className="glass-button border-pink-200" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="login-password">Senha</Label>
-              <Input id="login-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="glass-button border-pink-200" />
+              <Input id="login-password" type="password" placeholder="Sua senha" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" className="glass-button border-pink-200" />
             </div>
             {error && <p className="text-red-500 text-sm">{error}</p>}
             <Button type="button" onClick={handleLogin} className="w-full glass-button text-pink-700 hover:text-pink-800">Entrar</Button>
@@ -75,12 +81,20 @@ export default function IdentificationStep({ onIdentificationComplete }) {
         <TabsContent value="signup">
           <form onSubmit={handleSignup} className="space-y-4 p-4">
             <div className="space-y-2">
+              <Label htmlFor="signup-name">Nome</Label>
+              <Input id="signup-name" type="text" placeholder="Seu nome completo" value={name} onChange={(e) => setName(e.target.value)} required className="glass-button border-pink-200" />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="signup-email">Email</Label>
-              <Input id="signup-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="glass-button border-pink-200" />
+              <Input id="signup-email" type="email" placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="off" className="glass-button border-pink-200" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="signup-password">Senha</Label>
-              <Input id="signup-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="glass-button border-pink-200" />
+              <Input id="signup-password" type="password" placeholder="Cadastre a sua senha" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="off" className="glass-button border-pink-200" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="signup-confirm-password">Confirmar Senha</Label>
+              <Input id="signup-confirm-password" type="password" placeholder="Confirme sua senha" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required autoComplete="new-password" className="glass-button border-pink-200" />
             </div>
             {error && <p className="text-red-500 text-sm">{error}</p>}
             <Button type="button" onClick={handleSignup} className="w-full glass-button text-pink-700 hover:text-pink-800">Criar Conta</Button>

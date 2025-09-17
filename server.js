@@ -53,10 +53,13 @@ const db = new sqlite3.Database('./database.sqlite', (err) => {
   console.log('Connected to the SQLite database.');
 });
 
+
+
 db.serialize(() => {
   db.run(`CREATE TABLE IF NOT EXISTS user_profiles (
-    user_id TEXT PRIMARY KEY,
+    uid TEXT PRIMARY KEY,
     name TEXT,
+    email TEXT,
     phone TEXT,
     street TEXT,
     number TEXT,
@@ -82,7 +85,7 @@ db.serialize(() => {
     zip_code TEXT,
     payment_method TEXT,
     notes TEXT,
-    FOREIGN KEY (user_id) REFERENCES user_profiles(user_id)
+    FOREIGN KEY (user_id) REFERENCES user_profiles(uid)
   )`);
 
   db.run(`CREATE TABLE IF NOT EXISTS order_items (
@@ -438,8 +441,8 @@ app.post('/api/orders', (req, res) => {
 });
 
 app.get('/api/orders/:userId', (req, res) => {
-    const { userId } = req.params;
-    db.all("SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC", [userId], (err, orders) => {
+    const { userId: uid } = req.params;
+    db.all("SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC", [uid], (err, orders) => {
         if (err) {
             res.status(500).json({ error: err.message });
             return;
@@ -487,9 +490,33 @@ app.get('/api/orders/:userId', (req, res) => {
 
 
 
+app.post('/api/user-profile', (req, res) => {
+    const { uid, name, email } = req.body;
+
+    if (!uid || !name || !email) {
+        return res.status(400).json({ message: 'uid, name, and email are required.' });
+    }
+
+    db.run(`
+        INSERT INTO user_profiles (uid, name, email) 
+        VALUES (?, ?, ?)
+        ON CONFLICT(uid) DO UPDATE SET
+            name = excluded.name,
+            email = excluded.email
+    `, 
+    [uid, name, email], 
+    function(err) {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.status(200).json({ message: 'User profile created or updated successfully.' });
+    });
+});
+
 app.get('/api/profile/:userId', (req, res) => {
-    const { userId } = req.params;
-    db.get("SELECT * FROM user_profiles WHERE user_id = ?", [userId], (err, row) => {
+    const { userId: uid } = req.params;
+    db.get("SELECT * FROM user_profiles WHERE uid = ?", [uid], (err, row) => {
         if (err) {
             res.status(500).json({ error: err.message });
             return;
@@ -499,18 +526,18 @@ app.get('/api/profile/:userId', (req, res) => {
 });
 
 app.post('/api/profile', (req, res) => {
-    const { userId, name, phone, address, paymentMethod } = req.body;
+    const { userId: uid, name, phone, address, paymentMethod } = req.body;
 
-    if (!userId) {
+    if (!uid) {
         return res.status(400).json({ message: 'User ID is required.' });
     }
 
     const { street, number, complement, neighborhood, city, zip_code } = address;
 
     db.run(`
-        INSERT INTO user_profiles (user_id, name, phone, street, number, complement, neighborhood, city, zip_code, payment_method) 
+        INSERT INTO user_profiles (uid, name, phone, street, number, complement, neighborhood, city, zip_code, payment_method) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(user_id) DO UPDATE SET
+        ON CONFLICT(uid) DO UPDATE SET
             name = excluded.name,
             phone = excluded.phone,
             street = excluded.street,
@@ -521,7 +548,7 @@ app.post('/api/profile', (req, res) => {
             zip_code = excluded.zip_code,
             payment_method = excluded.payment_method
     `, 
-    [userId, name, phone, street, number, complement, neighborhood, city, zip_code, paymentMethod], 
+    [uid, name, phone, street, number, complement, neighborhood, city, zip_code, paymentMethod], 
     function(err) {
         if (err) {
             res.status(500).json({ error: err.message });
