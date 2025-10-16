@@ -112,6 +112,12 @@ const MyOrders = () => {
                   <p className="text-sm text-gray-600">{order.street}, {order.number}</p>
                   <p className="text-sm text-gray-600">{order.neighborhood}, {order.city} - {order.zip_code}</p>
                 </div>
+                {order.notes && (
+                  <div className="border-t mt-4 pt-4">
+                    <h4 className="font-semibold mb-2">Observações</h4>
+                    <p className="text-sm text-gray-600">{order.notes}</p>
+                  </div>
+                )}
               </AccordionContent>
             </AccordionItem>
           ))}

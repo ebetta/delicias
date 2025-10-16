@@ -33,7 +33,16 @@ export const AuthProvider = ({ children }) => {
 
   const googleSignIn = async (onSuccess) => {
     try {
-      await signInWithPopup(auth, googleProvider);
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+
+      // Garante que o perfil do usuário exista no banco de dados local
+      await localApiClient.post('/user-profile', {
+        uid: user.uid,
+        name: user.displayName,
+        email: user.email,
+      });
+
       handleAuthSuccess(onSuccess);
     } catch (error) {
       console.error("Google Sign-In Error", error);
