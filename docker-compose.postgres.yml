@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: delicias-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${PGUSER:-delicias}
+      POSTGRES_PASSWORD: ${PGPASSWORD:-delicias}
+      POSTGRES_DB: ${PGDATABASE:-delicias}
+    ports:
+      - "${PGPORT:-5433}:5432"
+    volumes:
+      - delicias_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PGUSER:-delicias} -d ${PGDATABASE:-delicias}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  delicias_pgdata:
+    name: delicias_pgdata
