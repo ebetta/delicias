@@ -92,6 +92,19 @@ const localApiClient = {
         }
         return response.json();
     },
+    put: async (endpoint, data) => {
+        const response = await fetch(`${API_URL}${endpoint}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to put to ${endpoint}`);
+        }
+        return response.json();
+    },
     post: async (endpoint, data, options) => {
         const isFormData = data instanceof FormData;
 

@@ -75,6 +75,7 @@ db.serialize(() => {
     user_id TEXT,
     total_amount REAL NOT NULL,
     status TEXT NOT NULL,
+    financial_status TEXT NOT NULL DEFAULT 'Aguardando pagamento',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     phone TEXT,
     street TEXT,
@@ -87,6 +88,22 @@ db.serialize(() => {
     notes TEXT,
     FOREIGN KEY (user_id) REFERENCES user_profiles(uid)
   )`);
+
+  // Add financial_status column if it doesn't exist
+  db.all("PRAGMA table_info(orders)", (err, columns) => {
+      if (err) {
+          console.error(err.message);
+          return;
+      }
+      const hasFinancialStatus = columns.some(col => col.name === 'financial_status');
+      if (!hasFinancialStatus) {
+          db.run("ALTER TABLE orders ADD COLUMN financial_status TEXT NOT NULL DEFAULT 'Aguardando pagamento'", (err) => {
+              if (err) {
+                  console.error(err.message);
+              }
+          });
+      }
+  });
 
   db.run(`CREATE TABLE IF NOT EXISTS order_items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -411,12 +428,12 @@ app.post('/api/orders', (req, res) => {
         db.run("BEGIN TRANSACTION");
 
         const orderStmt = db.prepare(`
-            INSERT INTO orders (id, user_id, total_amount, status, phone, street, number, complement, neighborhood, city, zip_code, payment_method, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO orders (id, user_id, total_amount, status, financial_status, phone, street, number, complement, neighborhood, city, zip_code, payment_method, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
         
         const { street, number, complement, neighborhood, city, zip_code } = address;
-        orderStmt.run(orderId, userId, totalAmount, 'pending', phone, street, number, complement, neighborhood, city, zip_code, paymentMethod, notes);
+        orderStmt.run(orderId, userId, totalAmount, 'Pedido aceito', 'Aguardando pagamento', phone, street, number, complement, neighborhood, city, zip_code, paymentMethod, notes);
         orderStmt.finalize();
 
         const itemStmt = db.prepare(`
@@ -436,6 +453,65 @@ app.post('/api/orders', (req, res) => {
                 return;
             }
             res.status(201).json({ message: 'Order created successfully', orderId: orderId });
+        });
+    });
+});
+
+app.get('/api/orders', (req, res) => {
+    const { startDate, endDate } = req.query;
+
+    let sql = "SELECT * FROM orders";
+    let params = [];
+
+    if (startDate && endDate) {
+        sql += " WHERE DATE(created_at) BETWEEN ? AND ?";
+        params.push(startDate, endDate);
+    }
+
+    sql += " ORDER BY created_at DESC";
+
+    db.all(sql, params, (err, orders) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+
+        if (!orders.length) {
+            return res.json([]);
+        }
+
+        const orderIds = orders.map(o => o.id);
+        const placeholders = orderIds.map(() => '?').join(',');
+
+        const query = `
+            SELECT 
+                oi.*,
+                p.image_urls
+            FROM order_items oi
+            LEFT JOIN products p ON oi.product_id = p.id
+            WHERE oi.order_id IN (${placeholders})
+        `;
+
+        db.all(query, orderIds, (err, items) => {
+            if (err) {
+                res.status(500).json({ error: err.message });
+                return;
+            }
+
+            const ordersWithItems = orders.map(order => ({
+                ...order,
+                items: items
+                    .filter(item => item.order_id === order.id)
+                    .map(item => {
+                        const image_urls = JSON.parse(item.image_urls || '[]');
+                        return {
+                            ...item,
+                            image_url: image_urls.length > 0 ? image_urls[0] : null
+                        }
+                    })
+            }));
+
+            res.json(ordersWithItems);
         });
     });
 });
@@ -489,6 +565,44 @@ app.get('/api/orders/:userId', (req, res) => {
 });
 
 
+
+app.put('/api/orders/:orderId', (req, res) => {
+    const { orderId } = req.params;
+    const { status, financial_status } = req.body;
+
+    let updateFields = [];
+    let params = [];
+
+    if (status) {
+        updateFields.push('status = ?');
+        params.push(status);
+    }
+
+    if (financial_status) {
+        updateFields.push('financial_status = ?');
+        params.push(financial_status);
+    }
+
+    if (updateFields.length === 0) {
+        return res.status(400).json({ message: 'No fields to update' });
+    }
+
+    params.push(orderId);
+
+    const sql = `UPDATE orders SET ${updateFields.join(', ')} WHERE id = ?`;
+
+    db.run(sql, params, function(err) {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        if (this.changes === 0) {
+            res.status(404).json({ message: 'Order not found' });
+        } else {
+            res.status(200).json({ message: 'Order updated successfully' });
+        }
+    });
+});
 
 app.post('/api/user-profile', (req, res) => {
     const { uid, name, email } = req.body;

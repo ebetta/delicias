@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { getProducts, createProduct, updateProduct, deleteProduct, reorderProducts } from "@/api/localApiClient";
 import { Button } from "@/components/ui/button";
-import { Plus, Package, Settings, BarChart3 } from "lucide-react";
+import { Plus, Package, Settings, BarChart3, ShoppingBag } from "lucide-react";
 import { motion } from "framer-motion";
 
 import ProductForm from "../components/admin/ProductForm";
 import ProductList from "../components/admin/ProductList";
 import AdminStats from "../components/admin/AdminStats";
 import AdminSettings from "../components/admin/AdminSettings";
+import OrderList from "../components/admin/OrderList";
 
 export default function Admin() {
   const [activeTab, setActiveTab] = useState("products");
@@ -77,6 +78,7 @@ export default function Admin() {
 
   const tabs = [
     { id: "products", label: "Produtos", icon: Package },
+    { id: "pedidos", label: "Pedidos", icon: ShoppingBag },
     { id: "stats", label: "Estatísticas", icon: BarChart3 },
     { id: "settings", label: "Configurações", icon: Settings },
   ];
@@ -160,6 +162,10 @@ export default function Admin() {
                 setEditingProduct(null);
               }}
             />
+          )}
+
+          {activeTab === "pedidos" && (
+            <OrderList />
           )}
 
           {activeTab === "stats" && (

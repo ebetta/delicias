@@ -8,7 +8,7 @@ import Admin from "./Admin";
 
 import Cart from "./Cart";
 
-import Orders from "./Orders";
+
 
 import MyOrders from "./MyOrders";
 import Login from "./Login";
@@ -27,7 +27,7 @@ const PAGES = {
     
     Cart: Cart,
     
-    Orders: Orders,
+
     
 }
 
@@ -66,8 +66,6 @@ function PagesContent() {
                 
                 <Route path="/Cart" element={<Cart />} />
                 
-                <Route path="/Orders" element={<Orders />} />
-
                 <Route path="/my-orders" element={<MyOrders />} />
 
                 <Route path="/login" element={<Login />} />
